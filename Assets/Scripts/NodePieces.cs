@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class NodePieces : MonoBehaviour
+public class NodePieces : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
 	public int value;
 	public Point index;
@@ -14,6 +15,7 @@ public class NodePieces : MonoBehaviour
 	public RectTransform rect;
 
 	Image img;
+	bool isUpdating;
 
 	public void Initialize(int value, Point point, Sprite piece)
 	{
@@ -21,7 +23,7 @@ public class NodePieces : MonoBehaviour
 		img = GetComponent<Image>();
 
 		this.value = value;
-		this.index = point;
+		SetIndex(point);
 		img.sprite = piece;
 	}
 
@@ -37,8 +39,45 @@ public class NodePieces : MonoBehaviour
 		position = new Vector2((64 * index.x), -(64 * index.y));
 	}
 
+	public void MovePosition(Vector2 moveSpeed)
+	{
+		rect.anchoredPosition += moveSpeed * Time.deltaTime * 16f;
+	}
+
+	public void MovePositionTo(Vector2 moveDestination)
+	{
+		rect.anchoredPosition = Vector2.Lerp(rect.anchoredPosition, moveDestination, Time.deltaTime * 16f);
+	}
+
+	public bool UpdatePiece()
+	{
+		if (Vector3.Distance(rect.anchoredPosition, position) > 1)
+		{
+			MovePositionTo(position);
+			isUpdating = true;
+			return true;
+		}
+		else
+		{
+			rect.anchoredPosition = position;
+			isUpdating = false;
+			return false;
+		}
+	}
+
 	void UpdateName()
 	{
 		transform.name = "Node [" + index.x + index.y + "]";
+	}
+
+	public void OnPointerDown(PointerEventData eventData)
+	{
+		if (isUpdating) return;
+		MovePieces.Instance.MovePiece(this);
+	}
+
+	public void OnPointerUp(PointerEventData eventData)
+	{
+		MovePieces.Instance.DropPiece();
 	}
 }

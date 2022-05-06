@@ -16,6 +16,7 @@ public class Match3 : MonoBehaviour
 	int width = 9;
 	int height = 14;
 	Node[,] board;
+	List<NodePieces> updatePiece;
 
 	System.Random random;
     // Start is called before the first frame update
@@ -24,10 +25,32 @@ public class Match3 : MonoBehaviour
 		StartGame();
 	}
 
+	// Update is called once per frame
+	void Update()
+	{
+		List<NodePieces> finishedUpdating = new List<NodePieces>();
+
+		for (int i = 0; i < updatePiece.Count; i++)
+		{
+			NodePieces piece = updatePiece[i];
+			if(!piece.UpdatePiece())
+			{
+				finishedUpdating.Add(piece);
+			}
+		}
+
+		for (int i = 0; i < finishedUpdating.Count; i++)
+		{
+			NodePieces pieces = finishedUpdating[i];
+			updatePiece.Remove(pieces);
+		}
+	}
+
 	void StartGame()
 	{
 		string seed = GetRandomSeed();
 		random = new System.Random(seed.GetHashCode());
+		updatePiece = new List<NodePieces>();
 
 		InitializeBoard();
 		VerifyBoard();
@@ -89,6 +112,12 @@ public class Match3 : MonoBehaviour
 				node.Initialize(value, new Point(x, y), pieces[value - 1]); // pieces start with 0
 			}
 		}
+	}
+
+	public void ResetPiece(NodePieces piece)
+	{
+		piece.ResetPosition();
+		updatePiece.Add(piece);
 	}
 
 	List<Point> IsConnected(Point currentPoint, bool main)
@@ -257,12 +286,6 @@ public class Match3 : MonoBehaviour
 		return availableValues[random.Next(0, availableValues.Count)];
 	}
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
 	string GetRandomSeed()
 	{
 		string seed = "";
@@ -272,6 +295,11 @@ public class Match3 : MonoBehaviour
 			seed += acceptableCharacters[Random.Range(0, acceptableCharacters.Length)];
 		}
 		return seed;
+	}
+
+	public Vector2 GetPositionFromPoint(Point point)
+	{
+		return new Vector2((64 * point.x), -(64 * point.y));
 	}
 }
 

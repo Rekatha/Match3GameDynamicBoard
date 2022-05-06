@@ -20,10 +20,10 @@ public class Point
 		y *= multiplier;
 	}
 
-	public void Add(int adder)
+	public void Add(Point adder)
 	{
-		x += adder;
-		y += adder;
+		x += adder.x;
+		y += adder.y;
 	}
 
 	public Vector2 ToVector()

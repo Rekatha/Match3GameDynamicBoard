@@ -16,7 +16,7 @@ public class Match3 : MonoBehaviour
 	int width = 9;
 	int height = 14;
 	Node[,] board;
-	List<NodePieces> updatePiece;
+	List<NodePiece> updatePiece;
 
 	System.Random random;
     // Start is called before the first frame update
@@ -28,11 +28,11 @@ public class Match3 : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		List<NodePieces> finishedUpdating = new List<NodePieces>();
+		List<NodePiece> finishedUpdating = new List<NodePiece>();
 
 		for (int i = 0; i < updatePiece.Count; i++)
 		{
-			NodePieces piece = updatePiece[i];
+			NodePiece piece = updatePiece[i];
 			if(!piece.UpdatePiece())
 			{
 				finishedUpdating.Add(piece);
@@ -41,7 +41,7 @@ public class Match3 : MonoBehaviour
 
 		for (int i = 0; i < finishedUpdating.Count; i++)
 		{
-			NodePieces pieces = finishedUpdating[i];
+			NodePiece pieces = finishedUpdating[i];
 			updatePiece.Remove(pieces);
 		}
 	}
@@ -50,7 +50,7 @@ public class Match3 : MonoBehaviour
 	{
 		string seed = GetRandomSeed();
 		random = new System.Random(seed.GetHashCode());
-		updatePiece = new List<NodePieces>();
+		updatePiece = new List<NodePiece>();
 
 		InitializeBoard();
 		VerifyBoard();
@@ -101,23 +101,46 @@ public class Match3 : MonoBehaviour
 		{
 			for (int y = 0; y < height; y++)
 			{
+				Node node = GetNodeAtPoint(new Point(x, y));
 				int value = board[x, y].value;
 
 				if (value <= 0) continue;
 
 				GameObject tile = Instantiate(nodePiece, gameBoard);
-				NodePieces node = tile.GetComponent<NodePieces>();
+				NodePiece piece = tile.GetComponent<NodePiece>();
 				RectTransform tilePosition = tile.GetComponent<RectTransform>();
 				tilePosition.anchoredPosition = new Vector2((64 * x), - (64 * y));
-				node.Initialize(value, new Point(x, y), pieces[value - 1]); // pieces start with 0
+				piece.Initialize(value, new Point(x, y), pieces[value - 1]); // pieces start with 0
+				node.SetPieces(piece);
 			}
 		}
 	}
 
-	public void ResetPiece(NodePieces piece)
+	public void ResetPiece(NodePiece piece)
 	{
 		piece.ResetPosition();
+		piece.flippedPieces = null;
 		updatePiece.Add(piece);
+	}
+
+	public void FlipPieces(Point one, Point two)
+	{
+		if (GetValueAtPoint(one) < 0) return;
+
+		Node nodeOne = GetNodeAtPoint(one);
+		NodePiece pieceOne = nodeOne.GetPiece();
+		if (GetValueAtPoint(two) > 0)
+		{
+			Node nodeTwo = GetNodeAtPoint(two);
+			NodePiece pieceTwo = nodeTwo.GetPiece();
+			nodeOne.SetPieces(pieceTwo);
+			nodeTwo.SetPieces(pieceOne);
+
+			updatePiece.Add(pieceOne);
+			updatePiece.Add(pieceTwo);
+		}
+		else
+			ResetPiece(pieceOne);
 	}
 
 	List<Point> IsConnected(Point currentPoint, bool main)
@@ -267,6 +290,11 @@ public class Match3 : MonoBehaviour
 		board[point.x, point.y].value = value;
 	}
 
+	Node GetNodeAtPoint(Point point)
+	{
+		return board[point.x, point.y];
+	}
+
 	int NewValue(ref List<int> valuesToBeRemoved)
 	{
 		List<int> availableValues = new List<int>();
@@ -308,10 +336,26 @@ public class Node
 {
 	public int value; // 0 = blank, 1 = cube, 2 = sphere, 3 = cylinder, 4 = pyramid, 5 = diamond, -1 = hole
 	public Point index;
+	NodePiece piece;
 
 	public Node(int value, Point index)
 	{
 		this.value = value;
 		this.index = index;
+	}
+
+	public void SetPieces(NodePiece nodePiece)
+	{
+		piece = nodePiece;
+		value = (piece == null) ? 0 : piece.value;
+
+		if (piece == null) return;
+
+		piece.SetIndex(index);
+	}
+
+	public NodePiece GetPiece()
+	{
+		return piece;
 	}
 }
